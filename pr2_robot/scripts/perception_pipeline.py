@@ -76,7 +76,8 @@ def pcl_callback(pcl_msg):
     vox = cloud_filtered.make_voxel_grid_filter()
 
     # Set the voxel (or leaf) size
-    LEAF_SIZE = 0.01
+    #LEAF_SIZE = 0.01
+    LEAF_SIZE = 0.006
     vox.set_leaf_size(LEAF_SIZE, LEAF_SIZE, LEAF_SIZE)
 
     # call the filter function to obtain the resultant downsampled point cloud
@@ -138,6 +139,7 @@ def pcl_callback(pcl_msg):
     # as well as minimum and maximum cluster size (in points)
     # NOTE: These are poor choices of clustering parameters
     # Your task is to experiment and find values that work for segmenting objects.
+    #ec.set_ClusterTolerance(0.02)
     ec.set_ClusterTolerance(0.01)
     ec.set_MinClusterSize(30)
     ec.set_MaxClusterSize(5000)
@@ -222,49 +224,110 @@ def pcl_callback(pcl_msg):
     # Suggested location for where to invoke your pr2_mover() function within pcl_callback()
     # Could add some logic to determine whether or not your object detections are robust
     # before calling pr2_mover()
-    #try:
-    #    pr2_mover(detected_objects_list)
-    #except rospy.ROSInterruptException:
-    #    pass
+    try:
+        pr2_mover(detected_objects)
+        #pass
+    except rospy.ROSInterruptException:
+        pass
 
 # function to load parameters and request PickPlace service
 def pr2_mover(object_list):
 
-    # TODO: Initialize variables
+    #### Initialize variables
+    #
+    yaml_dict_list = []
 
-    # TODO: Get/Read parameters
+    #### Get/Read parameters
+    #
+    test_scene_num = Int32()
+    test_scene_num.data = rospy.get_param("test_scene_num")
+    #
+    object_list_param = rospy.get_param('/object_list')
+    dropbox_list_param = rospy.get_param('/dropbox')
 
-    # TODO: Parse parameters into individual variables
-
+    #### Parse parameters into individual variables
+    #
+    # Parsing dropbox parameters
+    #
+    dropbox_by_group = {}
+    for dropbox in dropbox_list_param:
+	dropbox_by_group[dropbox['group']] = dropbox
+  
     # TODO: Rotate PR2 in place to capture side tables for the collision map
 
-    # TODO: Loop through the pick list
+    #### Loop through the pick list
+    #
+    for picking_object in object_list_param:
+        picking_object_name = picking_object['name']
+        picking_object_group = picking_object['group']
 
-        # TODO: Get the PointCloud for a given object and obtain it's centroid
+        picked = False
+        #
+        for detected_object in object_list:
+            if detected_object.label == picking_object_name:
 
-        # TODO: Create 'place_pose' for the object
+                picked = True
 
-        # TODO: Assign the arm to be used for pick_place
+                object_name = String()
+                object_name.data = picking_object_name
 
-        # TODO: Create a list of dictionaries (made with make_yaml_dict()) for later output to yaml format
+                #### Create 'pick_pose' for the object
+                #
+                pick_pose = Pose()
+                #
+                # Get the PointCloud for a given object and obtain it's centroid
+                points_arr = ros_to_pcl(detected_object.cloud).to_array()
+                centroid = np.mean(points_arr, axis=0)[:3]
+                #
+                pick_pose.position.x = np.asscalar(centroid[0])
+                pick_pose.position.y = np.asscalar(centroid[1])
+                pick_pose.position.z = np.asscalar(centroid[2])
 
-        # Wait for 'pick_place_routine' service to come up
-        rospy.wait_for_service('pick_place_routine')
+                ####
+                dropbox = dropbox_by_group[picking_object_group]
+        
+                #### Create 'place_pose' for the object
+                #
+                place_pose = Pose()
+                #
+                dropbox_position = dropbox['position']
+                place_pose.position.x = float(dropbox_position[0])
+                place_pose.position.y = float(dropbox_position[1])
+                place_pose.position.z = float(dropbox_position[2])
+   
+                #### Assign the arm to be used for pick_place
+                #
+                arm_name = String()
+                arm_name.data = dropbox['name']
 
-        try:
-            pick_place_routine = rospy.ServiceProxy('pick_place_routine', PickPlace)
+                #### Create a list of dictionaries (made with make_yaml_dict()) for later output to yaml format
+                #
+                yaml_dict = make_yaml_dict(test_scene_num, arm_name, object_name, pick_pose, place_pose)
+                yaml_dict_list.append(yaml_dict)
+                
+                #### Execute pick place action
+                #
+		# Wait for 'pick_place_routine' service to come up
+                rospy.wait_for_service('pick_place_routine')
 
-            # TODO: Insert your message variables to be sent as a service request
-            resp = pick_place_routine(TEST_SCENE_NUM, OBJECT_NAME, WHICH_ARM, PICK_POSE, PLACE_POSE)
+		try:
+		    pick_place_routine = rospy.ServiceProxy('pick_place_routine', PickPlace)
 
-            print ("Response: ",resp.success)
+		    # TODO: Insert your message variables to be sent as a service request
+		    resp = pick_place_routine(test_scene_num, object_name, arm_name, pick_pose, place_pose)
 
-        except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
+		    print ("Response: ",resp.success)
 
-    # TODO: Output your request parameters into output yaml file
+		except rospy.ServiceException, e:
+		    print "Service call failed: %s"%e
+                
+        if not picked:
+            rospy.logwarn('Could not find picking object {}'.format(picking_object_name))
 
 
+    #### Output your request parameters into output yaml file
+    yaml_filename = 'output_' + str(test_scene_num.data) + '.yaml'
+    send_to_yaml(yaml_filename, yaml_dict_list)
 
 if __name__ == '__main__':
 
