@@ -38,6 +38,7 @@ Since we had some prior information about the location of your target in the sce
 The Pass Through Filter works much like a cropping tool, which allows you to crop any given 3D point cloud by specifying an axis with cut-off values along that axis. The region you allow to pass through, is often referred to as region of interest.
 
 **RANSAC Plane Fitting**
+
 After the Pass Through Filter, the point cloud contained only tabletop & some object in the tabletop. The RANSAC Plane Fitting was used to seperate the tabletop and objects.
 
 ![png](./writeup_images/output_step_2_1.PNG)
@@ -59,28 +60,35 @@ Finally, A trained SVM classifier model was used to perform object recognition a
 ### Training SVM Model for Object Recognition
 
 **Features**
+
 Color histogram and normal histogram, that capture color information and shape information respectively, were used as feature for training SVM classifier.
 
 **Generating Dataset for Training**
+
 In gazebo simulation environment, runing a script to spawns each object in random orientations and computes features based on the point clouds resulting from each of the random orientations. Each object takes 1000 samples. When it finished running training_set.sav file was generated. The file containing the features and labels for the dataset for training the SVM classifier.
 
 **Training SVM**
+
 Train SVM with the dataset and the following figure showed its classification accurary with normalized confusion matrix.
 
 ![png](./writeup_images/figure_2.png)
 
 ### Results
+
 With the perception pipeline, the objects in the scene can be recognized as shown below.
 
 **Scene 1:**
+
 ![png](./writeup_images/output_result_1_1.PNG)
 ![png](./writeup_images/output_result_1_2.PNG)
 
 **Scene 2:**
+
 ![png](./writeup_images/output_result_2_1.PNG)
 ![png](./writeup_images/output_result_2_2.PNG)
 
 **Scene 3:**
+
 ![png](./writeup_images/output_result_3_1.PNG)
 ![png](./writeup_images/output_result_3_2.PNG)
  
