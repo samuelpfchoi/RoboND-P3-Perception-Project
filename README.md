@@ -1,57 +1,87 @@
-## Project: Perception Pick & Place
-### Writeup Template: You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
+﻿## Project: Perception Pick & Place
+[![Udacity - Robotics NanoDegree Program](https://s3-us-west-1.amazonaws.com/udacity-robotics/Extra+Images/RoboND_flag.png)](https://www.udacity.com/robotics)
 
----
+In this project, we will assimilate our work from previous exercises to successfully complete a tabletop pick and place operation using PR2.
 
+The PR2 has been outfitted with an RGB-D sensor much like the one you used in previous exercises. This sensor however is a bit noisy, much like real sensors.
 
-# Required Steps for a Passing Submission:
-1. Extract features and train an SVM model on new objects (see `pick_list_*.yaml` in `/pr2_robot/config/` for the list of models you'll be trying to identify). 
-2. Write a ROS node and subscribe to `/pr2/world/points` topic. This topic contains noisy point cloud data that you must work with.
-3. Use filtering and RANSAC plane fitting to isolate the objects of interest from the rest of the scene.
-4. Apply Euclidean clustering to create separate clusters for individual items.
-5. Perform object recognition on these objects and assign them labels (markers in RViz).
-6. Calculate the centroid (average in x, y and z) of the set of points belonging to that each object.
-7. Create ROS messages containing the details of each object (name, pick_pose, etc.) and write these messages out to `.yaml` files, one for each of the 3 scenarios (`test1-3.world` in `/pr2_robot/worlds/`).  [See the example `output.yaml` for details on what the output should look like.](https://github.com/udacity/RoboND-Perception-Project/blob/master/pr2_robot/config/output.yaml)  
-8. Submit a link to your GitHub repo for the project or the Python code for your perception pipeline and your output `.yaml` files (3 `.yaml` files, one for each test world).  You must have correctly identified 100% of objects from `pick_list_1.yaml` for `test1.world`, 80% of items from `pick_list_2.yaml` for `test2.world` and 75% of items from `pick_list_3.yaml` in `test3.world`.
-9. Congratulations!  Your Done!
+Given the cluttered tabletop scenario, you must implement a perception pipeline using your work from Exercises 1,2 and 3 to identify target objects from a so-called “Pick-List” in that particular order, pick up those objects and place them in corresponding dropboxes.
 
-# Extra Challenges: Complete the Pick & Place
-7. To create a collision map, publish a point cloud to the `/pr2/3d_map/points` topic and make sure you change the `point_cloud_topic` to `/pr2/3d_map/points` in `sensors.yaml` in the `/pr2_robot/config/` directory. This topic is read by Moveit!, which uses this point cloud input to generate a collision map, allowing the robot to plan its trajectory.  Keep in mind that later when you go to pick up an object, you must first remove it from this point cloud so it is removed from the collision map!
-8. Rotate the robot to generate collision map of table sides. This can be accomplished by publishing joint angle value(in radians) to `/pr2/world_joint_controller/command`
-9. Rotate the robot back to its original state.
-10. Create a ROS Client for the “pick_place_routine” rosservice.  In the required steps above, you already created the messages you need to use this service. Checkout the [PickPlace.srv](https://github.com/udacity/RoboND-Perception-Project/tree/master/pr2_robot/srv) file to find out what arguments you must pass to this service.
-11. If everything was done correctly, when you pass the appropriate messages to the `pick_place_routine` service, the selected arm will perform pick and place operation and display trajectory in the RViz window
-12. Place all the objects from your pick list in their respective dropoff box and you have completed the challenge!
-13. Looking for a bigger challenge?  Load up the `challenge.world` scenario and see if you can get your perception pipeline working there!
+![png](./writeup_images/demo_2.png)
 
-## [Rubric](https://review.udacity.com/#!/rubrics/1067/view) Points
-### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
+## Writeup
 
----
-### Writeup / README
+### Perception Pipeline
 
-#### 1. Provide a Writeup / README that includes all the rubric points and how you addressed each one.  You can submit your writeup as markdown or pdf.  
+The code related to the perception pipeline located in [perception_pipeline.py](https://github.com/samuelpfchoi/RoboND-P3-Perception-Project/blob/master/pr2_robot/scripts/perception_pipeline.py)
 
-You're reading it!
+There are no. of major steps involved in the pipeline:
+* Point cloud filtering
+* Table Segmentation
+* Clustering Objects
+* Object Recognition
 
-### Exercise 1, 2 and 3 pipeline implemented
-#### 1. Complete Exercise 1 steps. Pipeline for filtering and RANSAC plane fitting implemented.
+The following figures will demonstrate the details of each major steps. First, the RGB-D sensor capture a noisy 3D point cloud as shown below
 
-#### 2. Complete Exercise 2 steps: Pipeline including clustering for segmentation implemented.  
+![png](./writeup_images/output_step_0.png)
 
-#### 2. Complete Exercise 3 Steps.  Features extracted and SVM trained.  Object recognition implemented.
-Here is an example of how to include an image in your writeup.
+**Statistical Outlier Filter &  VoxelGrid Downsampling Filter**
 
-![demo-1](https://user-images.githubusercontent.com/20687560/28748231-46b5b912-7467-11e7-8778-3095172b7b19.png)
+The Statistical Outlier Filter was applied to remove noise and then, in order to have faster performance in coming steps, VoxelGrid Downsampling Filter was used to derive a point cloud that has fewer points.
 
-### Pick and Place Setup
+![png](./writeup_images/output_step_1.png)
 
-#### 1. For all three tabletop setups (`test*.world`), perform object recognition, then read in respective pick list (`pick_list_*.yaml`). Next construct the messages that would comprise a valid `PickPlace` request output them to `.yaml` format.
+**Pass Through Filter**
 
-And here's another image! 
-![demo-2](https://user-images.githubusercontent.com/20687560/28748286-9f65680e-7468-11e7-83dc-f1a32380b89c.png)
+Since we had some prior information about the location of your target in the scene, you can apply a Pass Through Filter to remove useless data from your point cloud.
 
-Spend some time at the end to discuss your code, what techniques you used, what worked and why, where the implementation might fail and how you might improve it if you were going to pursue this project further.  
+The Pass Through Filter works much like a cropping tool, which allows you to crop any given 3D point cloud by specifying an axis with cut-off values along that axis. The region you allow to pass through, is often referred to as region of interest.
 
+**RANSAC Plane Fitting**
+After the Pass Through Filter, the point cloud contained only tabletop & some object in the tabletop. The RANSAC Plane Fitting was used to seperate the tabletop and objects.
 
+![png](./writeup_images/output_step_2_1.png)
+
+![png](./writeup_images/output_step_2_2.png)
+
+**Euclidean Clustering**
+
+Now that you have filtered out the table plane, and all points outside of the region of interest, your point cloud should look like the image above. Euclidean Clustering was used to segment the remaining points into individual objects for object recognition step.
+
+![png](./writeup_images/output_step_3.png)
+
+**Object Recognition**
+
+Finally, A trained SVM classifier model was used to perform object recognition and the output label was added to above the object as shown below:
+
+![png](./writeup_images/output_step_4.png)
+
+### Training SVM Model for Object Recognition
+
+**Features**
+Color histogram and normal histogram, that capture color information and shape information respectively, were used as feature for training SVM classifier.
+
+**Generating Dataset for Training**
+In gazebo simulation environment, runing a script to spawns each object in random orientations and computes features based on the point clouds resulting from each of the random orientations. Each object takes 1000 samples. When it finished running training_set.sav file was generated. The file containing the features and labels for the dataset for training the SVM classifier.
+
+**Training SVM**
+Train SVM with the dataset and the following figure showed its classification accurary with normalized confusion matrix.
+
+### Results
+With the perception pipeline, the objects in the scene can be recognized as shown below.
+
+![png](./writeup_images/figure_2.png)
+
+**Scene 1:**
+![png](./writeup_images/output_result_1_1.png)
+![png](./writeup_images/output_result_1_2.png)
+
+**Scene 2:**
+![png](./writeup_images/output_result_2_1.png)
+![png](./writeup_images/output_result_2_2.png)
+
+**Scene 3:**
+![png](./writeup_images/output_result_3_1.png)
+![png](./writeup_images/output_result_3_2.png)
+ 
 
