@@ -23,13 +23,13 @@ There are no. of major steps involved in the pipeline:
 
 The following figures will demonstrate the details of each major steps. First, the RGB-D sensor capture a noisy 3D point cloud as shown below
 
-![png](./writeup_images/output_step_0.png)
+![png](./writeup_images/output_step_0.PNG)
 
 **Statistical Outlier Filter &  VoxelGrid Downsampling Filter**
 
 The Statistical Outlier Filter was applied to remove noise and then, in order to have faster performance in coming steps, VoxelGrid Downsampling Filter was used to derive a point cloud that has fewer points.
 
-![png](./writeup_images/output_step_1.png)
+![png](./writeup_images/output_step_1.PNG)
 
 **Pass Through Filter**
 
@@ -40,21 +40,21 @@ The Pass Through Filter works much like a cropping tool, which allows you to cro
 **RANSAC Plane Fitting**
 After the Pass Through Filter, the point cloud contained only tabletop & some object in the tabletop. The RANSAC Plane Fitting was used to seperate the tabletop and objects.
 
-![png](./writeup_images/output_step_2_1.png)
+![png](./writeup_images/output_step_2_1.PNG)
 
-![png](./writeup_images/output_step_2_2.png)
+![png](./writeup_images/output_step_2_2.PNG)
 
 **Euclidean Clustering**
 
 Now that you have filtered out the table plane, and all points outside of the region of interest, your point cloud should look like the image above. Euclidean Clustering was used to segment the remaining points into individual objects for object recognition step.
 
-![png](./writeup_images/output_step_3.png)
+![png](./writeup_images/output_step_3.PNG)
 
 **Object Recognition**
 
 Finally, A trained SVM classifier model was used to perform object recognition and the output label was added to above the object as shown below:
 
-![png](./writeup_images/output_step_4.png)
+![png](./writeup_images/output_step_4.PNG)
 
 ### Training SVM Model for Object Recognition
 
@@ -70,18 +70,18 @@ Train SVM with the dataset and the following figure showed its classification ac
 ### Results
 With the perception pipeline, the objects in the scene can be recognized as shown below.
 
-![png](./writeup_images/figure_2.png)
+![png](./writeup_images/figure_2.PNG)
 
 **Scene 1:**
-![png](./writeup_images/output_result_1_1.png)
-![png](./writeup_images/output_result_1_2.png)
+![png](./writeup_images/output_result_1_1.PNG)
+![png](./writeup_images/output_result_1_2.PNG)
 
 **Scene 2:**
-![png](./writeup_images/output_result_2_1.png)
-![png](./writeup_images/output_result_2_2.png)
+![png](./writeup_images/output_result_2_1.PNG)
+![png](./writeup_images/output_result_2_2.PNG)
 
 **Scene 3:**
-![png](./writeup_images/output_result_3_1.png)
-![png](./writeup_images/output_result_3_2.png)
+![png](./writeup_images/output_result_3_1.PNG)
+![png](./writeup_images/output_result_3_2.PNG)
  
 
