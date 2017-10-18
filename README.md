@@ -67,10 +67,10 @@ In gazebo simulation environment, runing a script to spawns each object in rando
 **Training SVM**
 Train SVM with the dataset and the following figure showed its classification accurary with normalized confusion matrix.
 
+![png](./writeup_images/figure_2.png)
+
 ### Results
 With the perception pipeline, the objects in the scene can be recognized as shown below.
-
-![png](./writeup_images/figure_2.PNG)
 
 **Scene 1:**
 ![png](./writeup_images/output_result_1_1.PNG)
