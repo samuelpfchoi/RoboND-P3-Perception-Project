@@ -253,7 +253,13 @@ def pr2_mover(object_list):
     for dropbox in dropbox_list_param:
 	dropbox_by_group[dropbox['group']] = dropbox
   
-    # TODO: Rotate PR2 in place to capture side tables for the collision map
+    #### Rotate PR2 in place to capture side tables for the collision map
+    base_controller_pub.publish(Float64(1.6))
+    rospy.sleep(10.)
+    base_controller_pub.publish(Float64(-1.6))
+    rospy.sleep(20.)
+    base_controller_pub.publish(Float64(0))
+    rospy.sleep(10.)
 
     #### Loop through the pick list
     #
@@ -348,6 +354,8 @@ if __name__ == '__main__':
     # Message Types "Marker" and "DetectedObjectsArray" , respectively
     object_markers_pub = rospy.Publisher("/object_markers", Marker, queue_size=1)
     detected_objects_pub = rospy.Publisher("/detected_objects", DetectedObjectsArray, queue_size=1)
+    #
+    base_controller_pub = rospy.Publisher("/pr2/world_joint_controller/command", Float64, queue_size=1)
 
     #### Load Model From disk
     #
