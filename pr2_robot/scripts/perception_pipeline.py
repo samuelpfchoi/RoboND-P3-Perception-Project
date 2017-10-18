@@ -335,6 +335,8 @@ def pr2_mover(object_list):
     yaml_filename = 'output_' + str(test_scene_num.data) + '.yaml'
     send_to_yaml(yaml_filename, yaml_dict_list)
 
+    rospy.signal_shutdown(reason="done")
+
 if __name__ == '__main__':
 
     #### ROS node initialization
